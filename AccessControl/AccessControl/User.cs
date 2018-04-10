@@ -25,22 +25,20 @@ namespace AccessControl
         }
 
         public User ()
-        {
-
-        }
+        {}
 
         public void AddUser()
         {
-
             //Apliquem hash
             this.Password_Hash = sha512Conversion(this.Password_PlainText);
 
             //Apliquem hash+salt
             this.Salt = saltGeneration();
-            this.Password_SaltedHash = sha512Conversion(this.Password_PlainText) + this.Salt; 
+            this.Password_SaltedHash = sha512Conversion(this.Password_PlainText) + this.Salt;
 
             //Apliquem hash+salt amb algorisme de hash lent.
-            //this.Password_SaltedHashSlow=
+            this.Salt = BytesToStringHex(hashByteConversion());
+            this.Password_SaltedHashSlow = slowHashConvertion(this.Password_PlainText, Encoding.UTF8.GetBytes(this.Salt));
 
             ((App)Application.Current).Database.Add(this);            
         }
@@ -48,9 +46,9 @@ namespace AccessControl
         public bool Validate (string _UserName, string _Password)
         {
             User MyUser = ((App)Application.Current).Database.Find(User => User.UserName == _UserName);
-            
+
             //Validate amb Text pla
-            
+
             /*if (!ReferenceEquals(MyUser, null))
             {
                 if (MyUser.Password_PlainText.Equals(_Password))
@@ -64,7 +62,7 @@ namespace AccessControl
             }*/
 
             //Validate amb Hash (comenta l'anterior validació)
-            
+
             // VALIDATION OK
 
             /*if (!ReferenceEquals(MyUser, null))
@@ -105,6 +103,24 @@ namespace AccessControl
             }*/
 
             //Validate amb Hash slow i salt. Pots utilitzar la classe Rfc2898DeriveBytes
+
+            // VALIDATION OK
+
+            if (!ReferenceEquals(MyUser, null))
+            {
+                String fullPasswordCheck = slowHashConvertion(_Password, Encoding.UTF8.GetBytes(MyUser.Salt));
+
+                if (MyUser.Password_SaltedHashSlow.Equals(fullPasswordCheck))
+                {
+                    return true;
+                } else
+                {
+                    return false;
+                }
+            } else
+            {
+                return false;
+            }
         }
 
         string BytesToStringHex (byte[] result)
@@ -139,6 +155,21 @@ namespace AccessControl
             string salt = BytesToStringHex(buffer);
 
             return salt;
+        }
+
+        string slowHashConvertion(string plainText, byte[] saltBytes)
+        {
+            Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(plainText, saltBytes, 1500);
+            return BytesToStringHex(deriveBytes.GetBytes(128));
+        }
+
+        byte[] hashByteConversion()
+        {
+            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+            byte[] buffer = new byte[1024];
+            rng.GetBytes(buffer);
+
+            return buffer;
         }
     }
 
