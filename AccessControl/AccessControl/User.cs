@@ -31,12 +31,13 @@ namespace AccessControl
 
         public void AddUser()
         {
+
             //Apliquem hash
-            this.Password_Hash = BytesToSha512(this.Password_PlainText);
+            this.Password_Hash = sha512Conversion(this.Password_PlainText);
 
             //Apliquem hash+salt
-            //this.Salt=
-            //this.Password_SaltedHash=
+            this.Salt = saltGeneration();
+            this.Password_SaltedHash = sha512Conversion(this.Password_PlainText) + this.Salt; 
 
             //Apliquem hash+salt amb algorisme de hash lent.
             //this.Password_SaltedHashSlow=
@@ -49,7 +50,8 @@ namespace AccessControl
             User MyUser = ((App)Application.Current).Database.Find(User => User.UserName == _UserName);
             
             //Validate amb Text pla
-            if (!ReferenceEquals(MyUser, null))
+            
+            /*if (!ReferenceEquals(MyUser, null))
             {
                 if (MyUser.Password_PlainText.Equals(_Password))
                     return true;
@@ -59,13 +61,48 @@ namespace AccessControl
             else
             {
                 return false;
-            }
+            }*/
 
             //Validate amb Hash (comenta l'anterior validació)
+            
+            // VALIDATION OK
+
+            /*if (!ReferenceEquals(MyUser, null))
+            {
+                String passwordCheck = sha512Conversion(_Password);
+
+                if (MyUser.Password_Hash.Equals(passwordCheck))
+                {
+                    return true;
+                } else
+                {
+                    return false;
+                }
+            } else
+            {
+                return false;
+            }*/
 
 
             //Validate amb Hash i salt (comenta l'anterior validació)
 
+            // VALIDATION OK
+
+            /*if (!ReferenceEquals(MyUser, null))
+            {
+                String fullPasswordCheck = sha512Conversion(_Password) + MyUser.Salt;
+
+                if (MyUser.Password_SaltedHash.Equals(fullPasswordCheck))
+                {
+                    return true;
+                } else
+                {
+                    return false;
+                }
+            } else
+            {
+                return false;
+            }*/
 
             //Validate amb Hash slow i salt. Pots utilitzar la classe Rfc2898DeriveBytes
         }
@@ -80,9 +117,9 @@ namespace AccessControl
             return stringBuilder.ToString();
         }
 
-        string BytesToSha512 (string plainText)
+        string sha512Conversion (string plainText)
         {
-            var data = Encoding.UTF8.GetBytes(this.Password_PlainText);
+            var data = Encoding.UTF8.GetBytes(plainText);
             byte[] hash;
 
             using (SHA512 sha512Instance = new SHA512Managed())
@@ -91,6 +128,17 @@ namespace AccessControl
             }
 
             return BytesToStringHex(hash);
+        }
+
+        string saltGeneration ()
+        {
+            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+            byte[] buffer = new byte[1024];
+
+            rng.GetBytes(buffer);
+            string salt = BytesToStringHex(buffer);
+
+            return salt;
         }
     }
 
